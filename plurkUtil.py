@@ -4,15 +4,12 @@ import urllib, urllib2, cookielib
 import cPickle
 import simplejson as json
 import codecs
+import logging
 
 class plurk(object):
     def __init__( self, file_name):
         self.opener = urllib2.build_opener( urllib2.HTTPCookieProcessor() )
         self.filename = file_name
-#       try:
-#           self.data = cPickle.load( open( self.filename, 'r' ) )
-#       except cPickle.UnpicklingError, EOFError:
-#           pass
 
         
     def set( self, account, password, api_key=None ):
@@ -20,10 +17,6 @@ class plurk(object):
             return 0
         self.data= { 'user' : account, 'password' : password, 'api_key' : api_key }
         return 1
-
-#        self.user = account
-#        self.password = password
-#        self.api_key = api_key
 
     def api( self, cmd ):
         return "http://www.plurk.com/API%s" % cmd
@@ -35,22 +28,16 @@ class plurk(object):
                                                      'api_key' : api_key } ) )
         return json.load( fp )
 
-    def new_plurk( self ):
-        import uuid
-        fp = self.opener.open( self.api( '/Timeline/plurkAdd' ), encode( { 'content' : uuid.uuid1(), 
+    def new_plurk( self, content=None ):
+        if ( content == None ):
+            import uuid
+            content = uuid.uuid1()
+        fp = self.opener.open( self.api( '/Timeline/plurkAdd' ), encode( { 'content' : content, 
                                                                            'qualifier' : 'feels', 
                                                                            'lang' : 'jp',
                                                                            'api_key' : self.data[ 'api_key' ]
                                                                             } ) )
-        return json.load( fp )
-#--- Requests ----------------------------------------------
-
-#fp = opener.open(get_api_url('/Timeline/plurkAdd'),
-#                 encode({'content': 'hello world',
-#                                          'qualifier': 'says',
-#                                                                   'lang': 'en',
- #                                                                                           'api_key': api_key}))
-#print fp.read()
+        return ( content, json.load( fp ) )
 
     def reply( self ):
         pass        
@@ -80,23 +67,43 @@ def connect( dumper ):
     fh.close()
     user = 'tmstaf'
     encode = urllib.urlencode
-    
 
     p = plurk( dumper )
     p.set( user, passwd, api_key )
     return p
 
+##=== Test APIs ===
+
+def test_login():
+    p = connect( "/tmp/plurk_data" )
+    res = p.login()
+    return "%s" % res[ 'user_info' ]
+
+def test_new_plurk( content=None ):
+    p = connect( "/tmp/plurk_data" )
+    res = p.login()
+    ( r_content, res ) = p.new_plurk( content )
+    if( content == None ):
+        logging.info( "%s" % r_content )
+    logging.info( "%s" % res )
+    if( '%s' % r_content == res[ 'content' ] ):
+        return 1
+    return 0
+
+def test_get_plurk( when ):
+    p = connect( "/tmp/plurk_data" )
+    res = p.login()
+    res = p.get_plurk()
+    logging.info( "%s" % res['plurks'][0] )
+    return res['plurks'][0]['content']
+    
 
 def main():
     p = connect( "/tmp/plurk_data" )
     p.login()
-    #p.new_plurk()
     res = p.get_plurk()
     save = codecs.open('/tmp/response_plurk', "w", encoding="utf-8")
     string = res['plurks'][15]['content']
-    #.encode( 'UTF-8' )
-    #string = u'中文'
-    #string.encode('UTF-8')
     save.write( string )
     save.close()
     return 0
@@ -105,8 +112,4 @@ def main():
 if __name__ == '__main__':
     import sys
     sys.exit( main() )
-
-
-#encode = urllib.urlencode
-
 
