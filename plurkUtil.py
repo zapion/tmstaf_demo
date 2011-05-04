@@ -5,6 +5,7 @@ import cPickle
 import simplejson as json
 import codecs
 import logging
+import os.path
 
 class plurk(object):
     def __init__( self, file_name):
@@ -60,8 +61,11 @@ def encode( items ):
     return encode( items )
 
 def connect( dumper ):
-## setup properties for connecting plurk api
-    fh = open( '/home/sapphirez/keys/plurk.properties', 'r' )
+    '''
+    setup properties for connecting plurk api
+    '''
+    props = os.path.expandvars( '$tmstaf_home/TMSTAF-Components/testsuites/plurk_demo/plurk.properties' )
+    fh = open( props, 'r' )
     passwd = fh.readline().strip().split( '=' )[ 1 ]
     api_key = fh.readline().strip().split( '=' )[ 1 ]
     fh.close()
@@ -75,22 +79,35 @@ def connect( dumper ):
 ##=== Test APIs ===
 
 def test_login():
+    '''
+    output: string of user_info if login successfully
+    '''
     p = connect( "/tmp/plurk_data" )
     res = p.login()
     return "%s" % res[ 'user_info' ]
 
-def test_new_plurk( content=None ):
+def test_new_plurk( content ):
+    '''
+    input: content for plurk
+    output: return 1 if content reponsed equal to original one (success)
+            return 0 if not match (fail)
+    '''
     p = connect( "/tmp/plurk_data" )
     res = p.login()
     ( r_content, res ) = p.new_plurk( content )
     if( content == None ):
         logging.info( "%s" % r_content )
     logging.info( "%s" % res )
+#compare responsed content with orginal item
     if( '%s' % r_content == res[ 'content' ] ):
         return 1
     return 0
 
 def test_get_plurk( when ):
+    '''
+    input: (TODO) to get all plurks in a certain period
+    output: plurks which match the search rule
+    '''
     p = connect( "/tmp/plurk_data" )
     res = p.login()
     res = p.get_plurk()
@@ -99,6 +116,9 @@ def test_get_plurk( when ):
     
 
 def main():
+    '''
+    test program
+    '''
     p = connect( "/tmp/plurk_data" )
     p.login()
     res = p.get_plurk()
