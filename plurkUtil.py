@@ -33,11 +33,14 @@ class plurk(object):
         if ( content == None ):
             import uuid
             content = uuid.uuid1()
-        fp = self.opener.open( self.api( '/Timeline/plurkAdd' ), encode( { 'content' : content, 
+        try:
+            fp = self.opener.open( self.api( '/Timeline/plurkAdd' ), encode( { 'content' : content, 
                                                                            'qualifier' : 'feels', 
                                                                            'lang' : 'jp',
                                                                            'api_key' : self.data[ 'api_key' ]
                                                                             } ) )
+        except urllib2.URLError, e:
+            return ( content, { 'content' : "%s" % e } )
         return ( content, json.load( fp ) )
 
     def reply( self ):
@@ -82,17 +85,17 @@ def test_login():
     '''
     output: string of user_info if login successfully
     '''
-    p = connect( "/tmp/plurk_data" )
+    p = connect( "./plurk_data" )
     res = p.login()
     return "%s" % res[ 'user_info' ]
 
-def test_new_plurk( content ):
+def test_new_plurk( content=None ):
     '''
     input: content for plurk
     output: return 1 if content reponsed equal to original one (success)
             return 0 if not match (fail)
     '''
-    p = connect( "/tmp/plurk_data" )
+    p = connect( "./plurk_data" )
     res = p.login()
     ( r_content, res ) = p.new_plurk( content )
     if( content == None ):
@@ -108,7 +111,7 @@ def test_get_plurk( when ):
     input: (TODO) to get all plurks in a certain period
     output: plurks which match the search rule
     '''
-    p = connect( "/tmp/plurk_data" )
+    p = connect( "./plurk_data" )
     res = p.login()
     res = p.get_plurk()
     logging.info( "%s" % res['plurks'][0] )
@@ -119,10 +122,10 @@ def main():
     '''
     test program
     '''
-    p = connect( "/tmp/plurk_data" )
+    p = connect( "./plurk_data" )
     p.login()
     res = p.get_plurk()
-    save = codecs.open('/tmp/response_plurk', "w", encoding="utf-8")
+    save = codecs.open('./response_plurk', "w", encoding="utf-8")
     string = res['plurks'][15]['content']
     save.write( string )
     save.close()
